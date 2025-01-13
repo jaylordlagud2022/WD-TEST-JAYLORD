@@ -1,0 +1,2 @@
+Task:
+"Create a custom WooCommerce plugin that allows a non-technical user (e.g., marketing team) to upload and manage rotating banners directly from the WordPress admin dashboard, without requiring developer intervention."
