@@ -3,6 +3,7 @@ Task:
 
 
 Fixes and Updates:
+-Added id Column for customer_credits table
 -Improved data validation: Added checks to ensure $user_id and $_POST['credits'] are set and valid before proceeding.
 -Nonce validation: Ensured update_customer_credits_nonce is verified before processing updates.
 -Database table name consistency: Updated table name to customer_credits in all database queries.

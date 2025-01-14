@@ -19,6 +19,7 @@ function create_customer_credits_table() {
     $charset_collate = $wpdb->get_charset_collate();
 
     $sql = "CREATE TABLE $table_name (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id bigint(20) NOT NULL,
         credits decimal(15, 2) NOT NULL DEFAULT 0,
         total_earned_credits decimal(15, 2) NOT NULL DEFAULT 0,
