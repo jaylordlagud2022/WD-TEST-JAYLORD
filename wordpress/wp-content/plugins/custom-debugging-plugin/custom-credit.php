@@ -414,7 +414,6 @@ function display_customer_profile_page_credits($user_id) {
                 <form id="adjustBalanceForm" action="' . esc_url(admin_url('admin-post.php')) . '" method="post">
                     <input type="hidden" name="action" value="update_customer_credits">
                     <input type="hidden" name="user_id" value="' . esc_attr($user_id) . '">
-                    ' . wp_nonce_field('update_customer_credits_nonce_action', 'update_customer_credits_nonce_field', false, false) . '
                     <label for="credits">Credit Adjustment:</label><br>
                     <input type="number" name="credits" step="0.01" value="0" required><br>
 
@@ -475,12 +474,6 @@ function manual_update_customer_credits() {
         wp_die(__('You do not have sufficient permissions to access this page.'));
     }
 
-    // Verify nonce
-    if (!isset($_POST['update_customer_credits_nonce_field']) || !wp_verify_nonce($_POST['update_customer_credits_nonce_field'], 'update_customer_credits_nonce')) {
-        wp_die(__('Invalid request.'));
-    }
-
-    // Validate and sanitize input
     $user_id = intval($_POST['user_id']);
     $credit_change = floatval($_POST['credits']); // Get the input value which could be positive or negative
 
