@@ -414,6 +414,7 @@ function display_customer_profile_page_credits($user_id) {
                 <form id="adjustBalanceForm" action="' . esc_url(admin_url('admin-post.php')) . '" method="post">
                     <input type="hidden" name="action" value="update_customer_credits">
                     <input type="hidden" name="user_id" value="' . esc_attr($user_id) . '">
+                    ' . wp_nonce_field('update_customer_credits_nonce_action', 'update_customer_credits_nonce_field', false, false) . '
                     <label for="credits">Credit Adjustment:</label><br>
                     <input type="number" name="credits" step="0.01" value="0" required><br>
 
@@ -430,7 +431,6 @@ function display_customer_profile_page_credits($user_id) {
             </div>
         </div>
         </div>';
-
         // JavaScript for modal functionality
         echo '<script>
                 document.getElementById("adjustBalanceButton").addEventListener("click", function() {
