@@ -1,0 +1,9 @@
+.wc-banner-slider {
+    display: flex;
+    overflow: hidden;
+}
+
+.wc-banner-slide {
+    flex: 0 0 100%;
+    transition: transform 0.5s ease-in-out;
+}

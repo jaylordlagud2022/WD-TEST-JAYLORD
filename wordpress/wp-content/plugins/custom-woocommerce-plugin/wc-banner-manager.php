@@ -14,6 +14,10 @@
  define('WC_BANNER_MANAGER_PATH', plugin_dir_path(__FILE__));
  define('WC_BANNER_MANAGER_URL', plugin_dir_url(__FILE__));
 
+ // Include required files
+ require_once WC_BANNER_MANAGER_PATH . 'includes/admin-banner-manager.php';
+ require_once WC_BANNER_MANAGER_PATH . 'includes/shortcode-display.php';
+
  // Enqueue scripts and styles
  function wc_banner_manager_enqueue_assets() {
      wp_enqueue_style('wc-banner-manager-style', WC_BANNER_MANAGER_URL . 'assets/css/style.css');
