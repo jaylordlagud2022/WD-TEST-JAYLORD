@@ -475,12 +475,6 @@ function manual_update_customer_credits() {
         wp_die(__('You do not have sufficient permissions to access this page.'));
     }
 
-    // Verify nonce
-    if (!isset($_POST['update_customer_credits_nonce_field']) || !wp_verify_nonce($_POST['update_customer_credits_nonce_field'], 'update_customer_credits_nonce')) {
-        wp_die(__('Invalid request.'));
-    }
-
-    // Validate and sanitize input
     $user_id = intval($_POST['user_id']);
     $credit_change = floatval($_POST['credits']); // Get the input value which could be positive or negative
 
