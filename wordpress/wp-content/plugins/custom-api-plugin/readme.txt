@@ -1,4 +1,4 @@
 Task:
-"Integrate a public API (e.g., a weather or currency exchange API) into a WordPress WooCommerce environment. Fetch data from the API and display it dynamically on a custom WooCommerce page."
+"Integrate the OpenWeatherMap API to fetch and display the current weather for a user’s location on a custom WooCommerce product page. The page should show the weather along with a message suggesting a related product."
 
 - Just create a shortcode for the function.
