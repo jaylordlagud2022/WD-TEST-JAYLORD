@@ -59,7 +59,7 @@ function baifumei_give_initial_credits($user_id) {
 
     // Check if user already has credits (to avoid duplicate entries)
     $existing_credits = $wpdb->get_var($wpdb->prepare(
-        "SELECT credits FROM {$wpdb->prefix}user_credits WHERE user_id = %d",
+        "SELECT credits FROM {$wpdb->prefix}customer_credits WHERE user_id = %d",
         $user_id
     ));
 
@@ -78,14 +78,14 @@ function baifumei_give_initial_credits($user_id) {
     }
 }
 
-
 function log_customer_credits_update($user_id, $updater, $old_credit_value, $new_credit_value, $note = '') {
     global $wpdb;
     $table_name = $wpdb->prefix . 'customer_credits';
 
     // Make sure $note is always set, even if it's not provided
-    $note = isset($note) && !empty($note) ? $note : '';
+    $note = !empty($note) ? $note : '';
 
+    // Prepare the history entry
     $history_entry = [
         'date' => current_time('mysql'),
         'updater' => $updater,
@@ -95,29 +95,33 @@ function log_customer_credits_update($user_id, $updater, $old_credit_value, $new
         'note' => $note,
     ];
 
+    // Fetch current history
     $history = $wpdb->get_var($wpdb->prepare(
         "SELECT history FROM $table_name WHERE user_id = %d",
         $user_id
     ));
 
+    // Unserialize history if it exists
     $history = maybe_unserialize($history);
     if (!is_array($history)) {
         $history = [];
     }
+
+    // Add new history entry
     $history[] = $history_entry;
 
     // Update the user's credit history in the database
     $wpdb->update($table_name, ['history' => maybe_serialize($history)], ['user_id' => $user_id]);
 }
 
-
 add_action('woocommerce_order_status_changed', 'update_customer_credits_on_status_change', 10, 4);
 
 function update_customer_credits_on_status_change($order_id, $old_status, $new_status, $order) {
     global $wpdb;
     $table_name = $wpdb->prefix . 'customer_credits';
-    
 
+    // Get user_id from order object
+    $user_id = $order->get_user_id();
     if (!$user_id) {
         return; // Skip guest orders
     }
@@ -135,14 +139,14 @@ function update_customer_credits_on_status_change($order_id, $old_status, $new_s
 
     $old_credits = $current_data->credits; // Old credit value before deduction or addition
 
+    // Handle credit deductions for order completion
     if (in_array($new_status, ['on-hold', 'processing', 'completed'])) {
         if (WC()->session && method_exists(WC()->session, 'get_sessions')) {
             $discount_value = WC()->session->get('store_credit_discount', 0);
 
             if ($discount_value > 0 && $discount_value <= $old_credits) {
                 $new_credits = $old_credits - $discount_value;
-                global $wpdb;
-                $wpdb->update($table_name, ['credits' => $new_credits]);
+                $wpdb->update($table_name, ['credits' => $new_credits], ['user_id' => $user_id]);
 
                 // Log the deduction
                 log_customer_credits_update($user_id, 'Order #' . $order_id, $old_credits, $new_credits, 'Credits deducted for order');
@@ -169,13 +173,13 @@ function update_customer_credits_on_status_change($order_id, $old_status, $new_s
     }
 }
 
+function add_custom_capability_to_roles() {
+    $role = get_role('administrator');
 
-
-
-
-
-
-add_action('admin_menu', 'add_credit_value_menu');
+    // Add custom capability
+    $role->add_cap('access_customer_credits');
+}
+add_action('admin_init', 'add_custom_capability_to_roles');
 
 function add_credit_value_menu() {
     // Main menu page for 'Customer Credits', restricted by custom capability 'access_customer_credits'
@@ -214,7 +218,14 @@ add_action('admin_menu', 'add_credit_value_menu');
 function credit_settings_callback() {
     ?>
     <h1>Settings</h1>
-    <h1>Building</h1>
+    <p>Configure your plugin settings here.</p>
+    <form method="post" action="options.php">
+        <?php
+        settings_fields('credit_plugin_options_group');
+        do_settings_sections('credit_plugin');
+        submit_button();
+        ?>
+    </form>
     <?php
 }
 
@@ -256,37 +267,15 @@ function credit_about_callback() {
     <?php
 }
 
-// Callback function to display customer information or profile page
+// Customer credits page callback
 function customer_credits_page_callback() {
-    if (isset($_GET['user_id'])) {
-        display_customer_profile_page_credits(intval($_GET['user_id']));
+    if (isset($_GET['user_id']) && intval($_GET['user_id']) > 0) {
+        $user_id = intval($_GET['user_id']);
+        display_customer_profile_page_credits($user_id);
     } else {
         display_customer_credits_table();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Function to display the customer tier table
 function display_customer_credits_table() {
@@ -371,27 +360,6 @@ function display_customer_credits_table() {
     echo '</div>';
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Function to display the customer profile page based on the tier
 function display_customer_profile_page_credits($user_id) {
     global $wpdb;
@@ -399,10 +367,17 @@ function display_customer_profile_page_credits($user_id) {
     $user_info = get_userdata($user_id);
     $table_name = $wpdb->prefix . 'customer_credits';
     $current_data = $wpdb->get_row($wpdb->prepare("SELECT credits, total_earned_credits, history FROM $table_name WHERE user_id = %d", $user_id));
-    $credits = $current_data->credits;
-    $total_earned_credits = $current_data->total_earned_credits;
-    $history = maybe_unserialize($current_data->history);
 
+    if ($current_data) {
+        $credits = $current_data->credits;
+        $total_earned_credits = $current_data->total_earned_credits;
+        $history = maybe_unserialize($current_data->history);
+    } else {
+        // Set default values if no data exists for the user
+        $credits = 0;
+        $total_earned_credits = 0;
+        $history = [];
+    }
 
     echo '<div class="wrap">';
     
@@ -492,9 +467,6 @@ function display_customer_profile_page_credits($user_id) {
     echo '</div>';
 }
 
-
-
-
 add_action('admin_post_update_customer_credits', 'manual_update_customer_credits');
 
 function manual_update_customer_credits() {
@@ -502,6 +474,12 @@ function manual_update_customer_credits() {
         wp_die(__('You do not have sufficient permissions to access this page.'));
     }
 
+    // Verify nonce
+    if (!isset($_POST['update_customer_credits_nonce_field']) || !wp_verify_nonce($_POST['update_customer_credits_nonce_field'], 'update_customer_credits_nonce')) {
+        wp_die(__('Invalid request.'));
+    }
+
+    // Validate and sanitize input
     $user_id = intval($_POST['user_id']);
     $credit_change = floatval($_POST['credits']); // Get the input value which could be positive or negative
 
@@ -565,7 +543,6 @@ function manual_update_customer_credits() {
 
 
 // }
-
 
 function get_user_credits_from_db($user_id) {
     global $wpdb;
